@@ -16,6 +16,7 @@ const {
 
 router.post('/signup', isNotLoggedIn(), validationLoggin(), async (req, res, next) => {
     const { username, email, password } = req.body;
+    console.log('sign', username, email, password)
 
     try {
         const emailExists = await User.findOne({ email }, 'email');
@@ -67,6 +68,13 @@ router.get('/private', isLoggedIn(), (req, res, next) => {
     res
         .status(200)
         .json({ message: 'Test - User is logged in' })
+});
+
+//ME
+router.get("/me", isLoggedIn(), (req, res, next) => {
+    // si está logueado, previene que el password sea enviado y devuelve un json con los datos del usuario (disponibles en req.session.currentUser)
+    req.session.currentUser.password = "*";
+    res.json(req.session.currentUser);
 });
 
 module.exports = router;

@@ -51,17 +51,12 @@ router.patch('/profile/:userId/edit', isLoggedIn(), (req, res, next) => {
 router.post('/books/add', parser.single('imageUrl'), isLoggedIn(), (req, res, next) => {
     console.log(req.body.title);
     Book.create({
-        /* let imgPath;
-        if (req.file) imgPath = req.file.url; */
        title: req.body.title,
        author: req.body.author, 
        description: req.body.description, 
-       genre: req.body.genre, 
        year: req.body.year, 
        publishingHouse: req.body.publishingHouse, 
        isbn: req.body.isbn,
-       creator: req.body.userId
-       /* , img: imgPath */ 
     })
     .then(response => {
         console.log('response', response)
@@ -82,12 +77,13 @@ router.post('/books/add', parser.single('imageUrl'), isLoggedIn(), (req, res, ne
 router.patch('/books/:bookId/edit', parser.single('imageUrl'), isLoggedIn(), (req, res, next) => {
     let { title, author, description, genre, year, publishingHouse, isbn, img } = req.body;
     User.findById(req.session.currentUser._id)
-    .then(user => {
+    .then(async user => {
         const userBooks = user.createdBooks
         if(!userBooks.includes(req.params.bookId)) {
             next(createError(401))
         } else {
-            return Book.findByIdAndUpdate(req.params.bookId, { title, author, description, genre, year, publishingHouse, isbn, img: req.body.img ? req.body.img : req.session.currentUser.img }, {new: true});
+            let actualBook = await Book.findById(req.params.bookId)
+            return Book.findByIdAndUpdate(req.params.bookId, { title, author, description, genre, year, publishingHouse, isbn, img: req.body.img ? req.body.img : actualBook.img }, {new: true});
         }
     })
     .then(() => {
@@ -102,9 +98,22 @@ router.delete('/books/:bookId', isLoggedIn(), (req, res, next) => {
     Book.findByIdAndRemove(req.params.bookId)
     .then((response) => {
         console.log('response', response);
-        User.findByIdAndUpdate(req.session.currentUser._id, {$pull: { createdBooks: req.params.bookId }, $set: createdBooks.length > 0 ? {isBookCreator: true} : {isBookCreator: false}}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
+        User.findByIdAndUpdate(req.session.currentUser._id, {$pull: { createdBooks: req.params.bookId }}, {new: true})
+        .then(user =>  {
+            let query;
+            if (user.createdBooks.length > 0) {
+                query = {isBookCreator: true}
+            } else {
+                query = {isBookCreator: false}
+            }
+
+            User.findByIdAndUpdate(req.session.currentUser._id, {$set: query}, {new: true})
+            .then(theResponse => {
+                res.json(theResponse);
+            })
+            .catch(err => {
+                res.json(err);
+            })
         })
         .catch(err => {
             res.json(err);
@@ -115,90 +124,12 @@ router.delete('/books/:bookId', isLoggedIn(), (req, res, next) => {
     });
 });
 
-router.post('/books/:bookId/paperBooks', isLoggedIn(), (req, res, next) => {
+router.post('/books/:bookId/:name', isLoggedIn(), (req, res, next) => {
+    
+    console.log('param', req.params.name)
     Book.findById(req.params.bookId)
     .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { paperBooks: req.params.bookId }}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
-        })
-        .catch(err => {
-            res.json(err);
-        })
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.post('/books/:bookId/eBooks', isLoggedIn(), (req, res, next) => {
-    Book.findById(req.params.bookId)
-    .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { eBooks: req.params.bookId }}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
-        })
-        .catch(err => {
-            res.json(err);
-        })
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.post('/books/:bookId/audiobooks', isLoggedIn(), (req, res, next) => {
-    Book.findById(req.params.bookId)
-    .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { audiobooks: req.params.bookId }}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
-        })
-        .catch(err => {
-            res.json(err);
-        })
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.post('/books/:bookId/pendingBooks', isLoggedIn(), (req, res, next) => {
-    Book.findById(req.params.bookId)
-    .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { pendingBooks: req.params.bookId }}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
-        })
-        .catch(err => {
-            res.json(err);
-        })
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.post('/books/:bookId/progressBooks', isLoggedIn(), (req, res, next) => {
-    Book.findById(req.params.bookId)
-    .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { progressBooks: req.params.bookId }}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
-        })
-        .catch(err => {
-            res.json(err);
-        })
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.post('/books/:bookId/readBooks', isLoggedIn(), (req, res, next) => {
-    Book.findById(req.params.bookId)
-    .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { readBooks: req.params.bookId }}, {new: true})
+        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { [req.params.name]: req.params.bookId }}, {new: true})
         .then(theResponse => {
             res.json(theResponse);
         })
@@ -224,7 +155,8 @@ router.get('/books/created/:userId', isLoggedIn(), (req, res, next) => {
 
 router.post('/books/:bookId', isLoggedIn(), (req, res, next) => {
     const { title, author, comment } = req.body;
-    Book.findByIdAndUpdate(req.params.bookId, { $push: { review: { title, author: req.session.currentUser._id, comment } } }, {new: true})
+    Book.findByIdAndUpdate(req.params.bookId, { $push: { review: { title, author: req.session.currentUser, comment } } }, {new: true})
+    .populate('author')
     .then(theResponse => {
         res.json(theResponse)
     })
@@ -300,14 +232,32 @@ router.get('/lists/:userId/reads-tracking/read', isLoggedIn(), (req, res, next) 
     });
 });
 
-router.put('/lists/:bookId/move', isLoggedIn(), (req, res, next) => {
-
-});
-
-router.delete('/lists/:bookId/delete/paper', isLoggedIn(), (req, res, next) => {
+router.put('/lists/:bookId/move/:from/:to', isLoggedIn(), (req, res, next) => {
     Book.findById(req.params.bookId)
     .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$pull: {paperBooks: req.params.bookId}}, {new: true})
+        User.findByIdAndUpdate(req.session.currentUser._id, { $pull: { [req.params.from]: req.params.bookId }}, {new: true})
+        .then((response) => {
+            User.findByIdAndUpdate(req.session.currentUser._id, { $push: {[req.params.to]: req.params.bookId }}, {new: true})
+            .then(theResponse => {
+                res.json(theResponse);
+            })
+            .catch(err => {
+                res.json(err);
+            })
+        })
+        .catch(err => {
+            res.json(err);
+        })
+    })
+    .catch( err => {
+        res.json(err);
+    });
+});
+
+router.delete('/lists/:bookId/delete/:name', isLoggedIn(), (req, res, next) => {
+    Book.findById(req.params.bookId)
+    .then((response) => {
+        User.findByIdAndUpdate(req.session.currentUser._id, {$pull: { [req.params.name]: req.params.bookId}}, {new: true})
         .then(theResponse => {
             res.json(theResponse);
         })
@@ -331,18 +281,18 @@ router.get('/book-clubs', (req, res, next) => {
     });
 });
 
-router.get('/book-clubs/joined', isLoggedIn(), (req, res, next) => {
+router.get('/book-clubs/:userId/joined', isLoggedIn(), (req, res, next) => {
     User.findById(req.params.userId)
-    .populate('bookClubs')
+    .populate('joinedBookClubs')
     .then(user => {
-        res.json(user.bookClubs)
+        res.json(user.joinedBookClubs)
     })
     .catch(err => {
         res.json(err)
     })
 });
 
-router.get('/book-clubs/created', isLoggedIn(), (req, res, next) => {
+router.get('/book-clubs/:userId/created', isLoggedIn(), (req, res, next) => {
     User.findById(req.params.userId)
     .populate('createdBookClubs')
     .then(user => {
@@ -363,34 +313,15 @@ router.get('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
     })
 })
 
-router.post('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
-    Club.findById(req.params.clubId)
-    .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { joinedBookClubs: req.params.clubId }}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
-        })
-        .catch(err => {
-            res.json(err);
-        })
-    })
-    .catch( err =>{
-        res.json(err);
-    });
-});
-
 router.post('/book-clubs/add', isLoggedIn(), (req, res, next) => {
     console.log(req.body.title);
     Club.create({
-        /* let imgPath;
-        if (req.file) imgPath = req.file.url; */
        title: req.body.title,
        description: req.body.description, 
        meetingDate: req.body.meetingDate,
        meetingHour: req.body.meetingHour, 
        meetingLink: req.body.meetingLink,
        creator: req.body.userId
-       /* , img: imgPath */ 
     })
     .then(response => {
         console.log('response', response)
@@ -408,15 +339,32 @@ router.post('/book-clubs/add', isLoggedIn(), (req, res, next) => {
     });
 })
 
+router.post('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
+    Club.findById(req.params.clubId)
+    .then((response) => {
+        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { joinedBookClubs: req.params.clubId }}, {new: true})
+        .then(theResponse => {
+            res.json(theResponse);
+        })
+        .catch(err => {
+            res.json(err);
+        })
+    })
+    .catch( err => {
+        res.json(err);
+    });
+});
+
 router.patch('/book-clubs/:clubId/edit', isLoggedIn(), (req, res, next) => {
-    let { title, description, meetingDate, meetingLink } = req.body;
+    let { title, description, meetingDate, meetingHour, meetingLink, img, bookToReadCover } = req.body;
     User.findById(req.session.currentUser._id)
-    .then(user => {
+    .then(async user => {
         const userClubs = user.createdBookClubs
         if(!userClubs.includes(req.params.clubId)) {
             next(createError(401))
         } else {
-            return Club.findByIdAndUpdate(req.params.clubId, { title, description, meetingDate, meetingLink })
+            let actualClub = await Club.findById(req.params.clubId)
+            return Club.findByIdAndUpdate(req.params.clubId, { title, description, meetingDate, meetingHour, meetingLink, img: req.body.img ? req.body.img : actualClub.img, bookToReadCover: req.body.bookToReadCover ? req.body.bookToReadCover : actualClub.bookToReadCover }, {new: true})
         }
     })
     .then(() => {
@@ -431,9 +379,22 @@ router.delete('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
     Club.findByIdAndRemove(req.params.clubId)
     .then((response) => {
         console.log('response', response)
-        User.findByIdAndUpdate(req.session.currentUser._id, {$pull: { createdBookClubs: req.params.clubId }, $set: createdBookClubs.length > 0 ? {isClubCreator: true} : {isClubCreator: false}}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
+        User.findByIdAndUpdate(req.session.currentUser._id, {$pull: { createdBookClubs: req.params.clubId }}, {new: true})
+        .then(user =>  {
+            let query;
+            if (user.createdBookClubs.length > 0) {
+                query = {isClubCreator: true}
+            } else {
+                query = {isClubCreator: false}
+            }
+
+            User.findByIdAndUpdate(req.session.currentUser._id, {$set: query}, {new: true})
+            .then(theResponse => {
+                res.json(theResponse);
+            })
+            .catch(err => {
+                res.json(err);
+            })
         })
         .catch(err => {
             res.json(err);

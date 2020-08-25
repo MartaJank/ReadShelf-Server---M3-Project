@@ -6,7 +6,6 @@ const bookSchema = new Schema ({
     img: {type: String, default:'https://res.cloudinary.com/martajank/image/upload/v1597920372/vintage-book-cover-vector-22334307_o6kale.jpg'},
     author: String,
     description: String,
-    genre: String,
     year: String,
     publishingHouse: String,
     isbn: String,
@@ -16,7 +15,7 @@ const bookSchema = new Schema ({
         comment: String,
         author: {type: Schema.Types.ObjectId, ref: 'User'}
     }],
-    creator: {type: Schema.Types.ObjectId, ref: 'User'}
+     
 }, {
     timestamps: {
         createdAt: 'created_at',
