@@ -12,6 +12,7 @@ const cors = require("cors");
 
 const auth = require("./routes/auth");
 const private = require('./routes/private');
+const upload = require('./routes/file-upload-routes')
 
 // MONGOOSE CONNECTION
 mongoose
@@ -34,13 +35,13 @@ app.use(
   })
 );
 
-// app.use((req, res, next) => {
-//   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-//   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS, DELETE');
-//   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-//   res.setHeader('Access-Control-Allow-Credentials', true);
-//   next();
-// });
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  next();
+});
 
 // SESSION MIDDLEWARE
 app.use(
@@ -68,6 +69,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // ROUTER MIDDLEWARE
 app.use('/auth', auth);
 app.use('/', private);
+app.use('/', upload);
 
 // ERROR HANDLING
 // catch 404 and forward to error handler
