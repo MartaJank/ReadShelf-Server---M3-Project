@@ -123,12 +123,16 @@ router.delete('/books/:bookId', isLoggedIn(), (req, res, next) => {
 });
 
 router.post('/books/:userId/push/:bookId/:name', (req, res, next) => {
-    
-    console.log('param', req.params.name)
+    console.log('body', req.body)
+    const { bookObj } = req.body
+    const {bookId} = req.params
+    console.log(req.params.name)
+    const { name } = req.params
+    console.log(name)
     Book.findById(req.params.bookId)
     .then((response) => {
         console.log(req.params.userId)
-        User.findByIdAndUpdate(req.params.userId, {$push: { [req.params.name]: req.params.bookId }}, {new: true})
+        User.findByIdAndUpdate(req.params.userId, {$push: { name: {bookObj}}}, {new: true})
         .then(theResponse => {
             res.json(theResponse);
         })
@@ -200,20 +204,34 @@ router.get('/api/lists/:userId/bookshelf/paper', isLoggedIn(), (req, res, next) 
     });
 });
 
-router.get('/api/lists/:userId/bookshelf/ebook', isLoggedIn(), (req, res, next) => {
+router.get('/api/lists/:userId/bookshelf/ebook', (req, res, next) => {
+   
+
     User.findById(req.params.userId)
-    .populate('eBooks')
-    .exec((err, user) => {
-      if (err) {
-        next(err);
-        return;
-      }
-    res.json(user.eBooks)
-});
+    .populate("eBooks")
+    .then(datos => 
+        res.json(datos).status(200)
+    
+    )
+    .catch(err => {
+        console.error(err)
+        res.status(500)})
+    });
     
 
+router.get("/solo/estoy/probando/:userId", (req, res, next) => {
+const { userId } = req.params
+    console.log(userId)
+    User.findOne({_id: userId})
+    .populate("eBooks")
+    .then(datos =>
+        res.json(datos).status(200))
+        .catch(err => {
+            console.error(err)
+            res.status(500)
+        })
+})
 
-});
 
 router.get('/lists/:userId/bookshelf/audiobook', isLoggedIn(), (req, res, next) => {
     User.findById(req.params.userId)
