@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const Book = require('./Book')
+const AllKindOfBooks = require('./AllKindOfBooks')
 
 const userSchema = new Schema ({
     
@@ -18,12 +19,12 @@ const userSchema = new Schema ({
     pendingBooks: [{type: Schema.Types.ObjectId, ref: 'Book'}],
     progressBooks: [{type: Schema.Types.ObjectId, ref: 'Book'}],
     readBooks: [{type: Schema.Types.ObjectId, ref: 'Book'}],
-    paperBooksAPI: [{type: Object, ref: 'Book'}],
-    eBooksAPI: [{type: Array, ref: 'Book'}],
-    audiobooksAPI: [{type: Array, ref: 'Book'}],
-    pendingBooksAPI: [{type: Array, ref: 'Book'}],
-    progressBooksAPI: [{type: Array, ref: 'Book'}],
-    readBooksAPI: [{type: Array, ref: 'Book'}],
+    paperBooksAPI: [],
+    eBooksAPI: [],
+    audiobooksAPI: [],
+    pendingBooksAPI: [],
+    progressBooksAPI: [],
+    readBooksAPI: [],
     bookClubs:  [{type: Schema.Types.ObjectId, ref: 'Club'}],
     createdBookClubs: [{type: Schema.Types.ObjectId, ref: 'Club'}],
     joinedBookClubs: [{type: Schema.Types.ObjectId, ref: 'Club'}]

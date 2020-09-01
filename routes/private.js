@@ -8,6 +8,7 @@ const parser = require('../config/cloudinary');
 const User = require("../models/User");
 const Book = require('../models/Book');
 const Club = require("../models/Club");
+const AllKindOfBooks = require('../models/AllKindOfBooks');
 
 // HELPERS
 const {
@@ -122,28 +123,103 @@ router.delete('/books/:bookId', isLoggedIn(), (req, res, next) => {
     });
 });
 
-router.post('/books/:userId/push/:bookId/:name', (req, res, next) => {
-    console.log('body', req.body)
-    const { bookObj } = req.body
-    const {bookId} = req.params
-    console.log(req.params.name)
-    const { name } = req.params
-    console.log(name)
-    Book.findById(req.params.bookId)
-    .then((response) => {
-        console.log(req.params.userId)
-        User.findByIdAndUpdate(req.params.userId, {$push: { name: {bookObj}}}, {new: true})
-        .then(theResponse => {
-            res.json(theResponse);
-        })
-        .catch(err => {
-            res.json(err);
-        })
+router.get('/searchBooks/allkindofbooks', (req, res, next) => {
+    AllKindOfBooks.find()
+    .then(data =>{
+        console.log(data)
+    res.json(data).status(200)
     })
     .catch(err => {
-        res.json(err);
-    });
-});
+        console.error(err)
+    res.status(500)})
+})
+
+router.post('/books/:userId/push/:name', (req, res, next) => {
+    console.log('holaaaa', req.body.volumeInfo)
+    const { name } = req.params;
+    const { id } = req.body
+    const { title,
+        authors,
+        publisher,
+        publishedDate,
+        description,
+        industryIdentifiers,
+        readingModes,
+        pageCount,
+        printedPageCount,
+        dimensions,
+        printType,
+        categories,
+        averageRating,
+        ratingsCount,
+        maturityRating,
+        allowAnonLogging,
+        contentVersion,
+        panelizationSummary,
+        imageLinks,
+        language,
+        previewLink,
+        infoLink,
+        canonicalVolumeLink } = req.body.volumeInfo;
+
+        AllKindOfBooks.create({
+            id,
+            title,
+            authors,
+            publisher,
+            publishedDate,
+            description,
+            industryIdentifiers,
+            readingModes,
+            pageCount,
+            printedPageCount,
+            dimensions,
+            printType,
+            categories,
+            averageRating,
+            ratingsCount,
+            maturityRating,
+            allowAnonLogging,
+            contentVersion,
+            panelizationSummary,
+            imageLinks,
+            language,
+            previewLink,
+            infoLink,
+            canonicalVolumeLink
+        })
+        
+        .then(datos => {
+           
+            User.findByIdAndUpdate(req.params.userId, {$push: { [name]: req.body}}, {new: true})
+            .then(theResponse => {
+                res.json(theResponse).status(200);
+            })
+            .catch(err => {
+                res.json(err).status(500);
+            })
+            res.json(datos).status(200)
+        })
+        .catch(err => {
+            console.error(err)
+            res.status(500)
+        })
+
+    })
+
+    router.delete('/books/:userId/pull/:name/:bookobjId', (req, res, next) => {
+        const { id } = req.body
+        const { name, bookobjId } = req.params
+       console.log(req.params.bookobjId, 'sdgjskgksksdkhsk')
+            User.findByIdAndUpdate(req.params.userId, {$pull: {[name] :  {id: bookobjId}}}, {new: true})
+            .then(theResponse => {
+                console.log('voy a cortarme las venas', theResponse)
+                res.json(theResponse);
+            })
+            .catch(err => {
+                res.json(err);
+            })
+        })
 
 router.get('/books/created/:userId', isLoggedIn(), (req, res, next) => {
     User.findById(req.params.userId)
@@ -179,58 +255,48 @@ router.post('/books/:bookId', isLoggedIn(), (req, res, next) => {
 });
 
 //LISTS
-router.get('/api/lists/:userId/bookshelf/paper', isLoggedIn(), (req, res, next) => {
-    console.log('req user', req.params.userId)
-    User.findOne({_id: req.params.userId})
-    /* .populate(paperBooks) */
+router.get('/lists/:userId/bookshelf/paper', isLoggedIn(), (req, res, next) => {
+    User.findById(req.params.userId)
+    .populate('paperBooks')
     .then(user => {
-        return user.paperBooks.map(book => {
-            Book.findById(book)
-                .then(bookObj => {
-                    return bookObj
-                })
-                .catch(err => {
-                    res.json(err);
-                });
-        })
-    /*     console.log('user', user)
-        res.json(paperBooks); */
-    })
-    .then(paperBooks => {
-        res.json(paperBooks)
+        res.json(user.paperBooks);
     })
     .catch(err => {
         res.json(err);
     });
 });
 
-router.get('/api/lists/:userId/bookshelf/ebook', (req, res, next) => {
-   
-
-    User.findById(req.params.userId)
-    .populate("eBooks")
-    .then(datos => 
-        res.json(datos).status(200)
-    
-    )
-    .catch(err => {
-        console.error(err)
-        res.status(500)})
-    });
-    
-
-router.get("/solo/estoy/probando/:userId", (req, res, next) => {
-const { userId } = req.params
-    console.log(userId)
-    User.findOne({_id: userId})
-    .populate("eBooks")
-    .then(datos =>
-        res.json(datos).status(200))
-        .catch(err => {
-            console.error(err)
-            res.status(500)
-        })
+router.get('/user/info/:userId', (req, res, next) => {
+    const { userId } = req.params
+    User.findById(userId)
+        .then(data =>{
+            console.log(data)
+        res.json(data).status(200)})
+            .catch(err =>{
+                console.error(err)
+                res.status(500)})
 })
+
+router.get('/lists/:userId/bookshelf/paper', (req, res, next) => {
+    User.findById(req.params.userId)
+    .then(user => {
+        res.json(user.paperBooksAPI);
+    })
+    .catch(err => {
+        res.json(err);
+    });
+});
+
+router.get('/lists/:userId/bookshelf/ebook', isLoggedIn(), (req, res, next) => {
+    User.findById(req.params.userId)
+    .populate('eBooks')
+    .then(user => {
+        res.json(user.eBooks);
+    })
+    .catch(err => {
+        res.json(err);
+    });
+});
 
 
 router.get('/lists/:userId/bookshelf/audiobook', isLoggedIn(), (req, res, next) => {
@@ -357,6 +423,15 @@ router.get('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
         res.json(err);
     })
 })
+router.get('/book-clubs/created/one/:clubId', isLoggedIn(), (req, res, next) => {
+    Club.findById(req.params.clubId)
+    .then(response => {
+      res.json(response);
+    })
+    .catch(err => {
+      res.json(err);
+    })
+})
 
 router.post('/book-clubs/add', isLoggedIn(), (req, res, next) => {
     console.log(req.body.title);
@@ -367,7 +442,7 @@ router.post('/book-clubs/add', isLoggedIn(), (req, res, next) => {
        meetingDate: req.body.meetingDate,
        meetingHour: req.body.meetingHour, 
        meetingLink: req.body.meetingLink,
-       creator: req.body.userId
+       creator: req.session.currentUser._id
     })
     .then(response => {
         console.log('response', response)
@@ -402,15 +477,15 @@ router.post('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
 });
 
 router.patch('/book-clubs/:clubId/edit', isLoggedIn(), (req, res, next) => {
-    let { title, description, currentBookTitle, meetingDate, meetingHour, meetingLink, img, bookToReadCover } = req.body;
+    let { title, description, currentBookTitle, meetingDate, meetingHour, meetingLink, imageUrl } = req.body;
     User.findById(req.session.currentUser._id)
     .then(async user => {
         const userClubs = user.createdBookClubs
         if(!userClubs.includes(req.params.clubId)) {
             next(createError(401))
         } else {
-            let actualClub = await Club.findById(req.params.clubId)
-            return Club.findByIdAndUpdate(req.params.clubId, { title, description, currentBookTitle, meetingDate, meetingHour, meetingLink, img: req.body.img ? req.body.img : actualClub.img, bookToReadCover: req.body.bookToReadCover ? req.body.bookToReadCover : actualClub.bookToReadCover }, {new: true})
+            
+            return Club.findByIdAndUpdate(req.params.clubId, { title, description, currentBookTitle, meetingDate, meetingHour, meetingLink, imageUrl: req.body.imageUrl ? req.body.imageUrl : req.session.currentUser.imageUrl }, {new: true})
         }
     })
     .then(() => {
@@ -421,7 +496,7 @@ router.patch('/book-clubs/:clubId/edit', isLoggedIn(), (req, res, next) => {
     });
 })
 
-router.delete('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
+router.delete('/book-clubs/:clubId',isLoggedIn(), (req, res, next) => {
     Club.findByIdAndRemove(req.params.clubId)
     .then((response) => {
         console.log('response', response)
