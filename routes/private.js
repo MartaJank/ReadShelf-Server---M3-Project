@@ -255,17 +255,6 @@ router.post('/books/:bookId', isLoggedIn(), (req, res, next) => {
 });
 
 //LISTS
-router.get('/lists/:userId/bookshelf/paper', isLoggedIn(), (req, res, next) => {
-    User.findById(req.params.userId)
-    .populate('paperBooks')
-    .then(user => {
-        res.json(user.paperBooks);
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
 router.get('/user/info/:userId', (req, res, next) => {
     const { userId } = req.params
     User.findById(userId)
@@ -276,72 +265,6 @@ router.get('/user/info/:userId', (req, res, next) => {
                 console.error(err)
                 res.status(500)})
 })
-
-router.get('/lists/:userId/bookshelf/paper', (req, res, next) => {
-    User.findById(req.params.userId)
-    .then(user => {
-        res.json(user.paperBooksAPI);
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.get('/lists/:userId/bookshelf/ebook', isLoggedIn(), (req, res, next) => {
-    User.findById(req.params.userId)
-    .populate('eBooks')
-    .then(user => {
-        res.json(user.eBooks);
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-
-router.get('/lists/:userId/bookshelf/audiobook', isLoggedIn(), (req, res, next) => {
-    User.findById(req.params.userId)
-    .populate('audiobooks')
-    .then(user => {
-        res.json(user.audiobooks);
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.get('/lists/:userId/reads-tracking/pending', isLoggedIn(), (req, res, next) => {
-    User.findById(req.params.userId)
-    .populate('pendingBooks')
-    .then(user => {
-        res.json(user.pendingBooks);
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.get('/lists/:userId/reads-tracking/in-progress', isLoggedIn(), (req, res, next) => {
-    User.findById(req.params.userId)
-    .populate('progressBooks')
-    .then(user => {
-        res.json(user.progressBooks);
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
-
-router.get('/lists/:userId/reads-tracking/read', isLoggedIn(), (req, res, next) => {
-    User.findById(req.params.userId)
-    .populate('readBooks')
-    .then(user => {
-        res.json(user.readBooks);
-    })
-    .catch(err => {
-        res.json(err);
-    });
-});
 
 router.put('/lists/:bookId/move/:from/:to', isLoggedIn(), (req, res, next) => {
     Book.findById(req.params.bookId)
@@ -460,10 +383,12 @@ router.post('/book-clubs/add', isLoggedIn(), (req, res, next) => {
     });
 })
 
-router.post('/book-clubs/:clubId', isLoggedIn(), (req, res, next) => {
+router.post('/join-club/:userId/:clubId', (req, res, next) => {
     Club.findById(req.params.clubId)
     .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$push: { joinedBookClubs: req.params.clubId }}, {new: true})
+        console.log('response', response)
+        console.log('club-user', req.params.userId)
+        User.findByIdAndUpdate(req.params.userId, { $push: { joinedBookClubs: response._id }}, {new: true})
         .then(theResponse => {
             res.json(theResponse);
         })
@@ -496,7 +421,7 @@ router.patch('/book-clubs/:clubId/edit', isLoggedIn(), (req, res, next) => {
     });
 })
 
-router.delete('/book-clubs/:clubId',isLoggedIn(), (req, res, next) => {
+router.delete('/book-clubs/:clubId', (req, res, next) => {
     Club.findByIdAndRemove(req.params.clubId)
     .then((response) => {
         console.log('response', response)
@@ -526,10 +451,10 @@ router.delete('/book-clubs/:clubId',isLoggedIn(), (req, res, next) => {
     });
 });
 
-router.delete('/book-clubs/:clubId/unjoin', isLoggedIn(), (req, res, next) => {
+router.delete('/unjoin/:userId/:clubId', (req, res, next) => {
     Club.findById(req.params.clubId)
     .then((response) => {
-        User.findByIdAndUpdate(req.session.currentUser._id, {$pull: { joinedBookClubs: req.params.clubId }}, {new: true})
+        User.findByIdAndUpdate(req.params.userId, {$pull: { joinedBookClubs: response._id }}, {new: true})
         .then(theResponse => {
             res.json(theResponse);
         })
