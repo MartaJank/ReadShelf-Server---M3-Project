@@ -1,6 +1,6 @@
 # ReadShelf - M3 Project
 
-![logo]()
+![logo](https://res.cloudinary.com/martajank/image/upload/v1598511845/Logo_ngj48v.png)
 
 ## Description
 
